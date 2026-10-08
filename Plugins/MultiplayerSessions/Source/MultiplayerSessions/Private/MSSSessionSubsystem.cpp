@@ -128,10 +128,16 @@ void UMSSSessionSubsystem::FindSessions(int32 MaxSearchResults)
 		FOnFindSessionsCompleteDelegate::CreateUObject(this, &UMSSSessionSubsystem::HandleFindSessionsComplete)
 	);
 
+
 	LastSessionSearch = MakeShareable(new FOnlineSessionSearch());
 	LastSessionSearch->MaxSearchResults = MaxSearchResults;
-	LastSessionSearch->bIsLanQuery = (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL");
-	LastSessionSearch->QuerySettings.Set(FName(TEXT("PRESENCESEARCH")), true, EOnlineComparisonOp::Equals);
+	const bool bIsLAN = (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL");
+	LastSessionSearch->bIsLanQuery = bIsLAN;
+	// Only perform the presence query if it's internet/Steam, never for LAN!
+	if (!bIsLAN)
+	{
+		LastSessionSearch->QuerySettings.Set(FName(TEXT("PRESENCESEARCH")), true, EOnlineComparisonOp::Equals);
+	}
 
 	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
 	if (!LocalPlayer || !SessionInterface->FindSessions(*LocalPlayer->GetPreferredUniqueNetId(), LastSessionSearch.ToSharedRef()))
